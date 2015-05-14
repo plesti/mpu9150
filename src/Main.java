@@ -25,14 +25,14 @@ public class Main {
             sensor = new MPU9150(device);
             System.out.println("[ OK ] Device connected!");
 
-            // Set power on to allow accelerator config
+            // Set power on to allow to config
             sensor.setPowerMode(MPU9150.POWER_MODE_ON);
-            // Set full scale range
+            // Set full scale range of accelerator data
             sensor.setRange(MPU9150.RANGE_2_G);
             // Activate low power wake-up mode
             sensor.setPowerMode(MPU9150.POWER_MODE_CYCLE);
             // Set data rate
-            sensor.setWakeUpFrequency(MPU9150.WAKEUP_FREQUENCY_20HZ);
+            sensor.setWakeUpFrequency(MPU9150.WAKEUP_FREQUENCY_1_25HZ);
 
             System.out.println("[ OK ] Device configured!");
 
@@ -92,12 +92,12 @@ public class Main {
 
             try {
                 while (!stopping) {
-                    if ((sensor.getDevice().read(MPU9150.REG_INT_STATUS) & 0x01) == 0) {
-                        // Data not ready
+                    if (!sensor.isDataReady()) {
                         continue;
                     }
+
                     // Initialize vector with zeros
-                    byte[] accelData = new byte[6];
+                    int[] accelData = new int[3];
 
                     int datacount = sensor.getAcceleration(accelData);
 
@@ -107,9 +107,9 @@ public class Main {
                     }
 
                     // Get acceleration in G
-                    double x = ((accelData[0] << 8) | (accelData[1] & 0xFF)) / 16384.0;
-                    double y = ((accelData[2] << 8) | (accelData[3] & 0xFF)) / 16384.0;
-                    double z = ((accelData[4] << 8) | (accelData[5] & 0xFF)) / 16384.0;
+                    double x = accelData[0] / 16384.0;
+                    double y = accelData[1] / 16384.0;
+                    double z = accelData[2] / 16384.0;
 
                     // Print datas to stdout
                     String text = String.format("%d X: %.4f Y: %.4f Z: %.4f", number, x, y, z);

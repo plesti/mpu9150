@@ -102,27 +102,39 @@ public class MPU9150 {
      * @throws IOException
      */
     public void setWakeUpFrequency(int frequency) throws IOException {
-        int format = sensor.read(REG_PWR_MGMT_2) | (frequency << 6);
+        int format = (sensor.read(REG_PWR_MGMT_2) & 0x3F) | (frequency << 6);
         sensor.write(REG_PWR_MGMT_2, (byte) format);
     }
 
     /**
-     * Read acceleration sensor data to array
+     * Read acceleration sensor data to the given array
      * @param store sensor data to store in. Length should be 6.
      * @return number of bytes read
      * @throws IOException
      */
-    public int getAcceleration(byte[] store) throws IOException {
-        if (store.length != 6) {
-            throw new IndexOutOfBoundsException("acceldata must be 6 byte");
+    public int getAcceleration(int[] store) throws IOException {
+        if (store.length != 3) {
+            throw new IndexOutOfBoundsException("Store array must be 3 double");
         }
-
+        byte[] accelData = new byte[6];
         // Data must be read in one burst or multiple byte read
         // because the vector will be erased from sensor memory on any
         // (single or multiple) read. See documentation..
-        return sensor.read(REG_ACCEL_XOUT_H, store, 0, 6);
+        int read = sensor.read(REG_ACCEL_XOUT_H, accelData, 0, 6);
+
+        store[0] = (accelData[0] << 8) | (accelData[1] & 0xFF);
+        store[1] = (accelData[2] << 8) | (accelData[3] & 0xFF);
+        store[2] = (accelData[4] << 8) | (accelData[5] & 0xFF);
+
+        return read;
     }
 
 
-
+    /**
+     * Check if data is ready to read.
+     * @return
+     */
+    public boolean isDataReady() throws IOException {
+        return ((sensor.read(MPU9150.REG_INT_STATUS) & 0x01) != 0);
+    }
 }
