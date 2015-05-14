@@ -35,17 +35,16 @@ public class MPU9150 {
 
     private I2CDevice sensor;
 
+    int mode = 0;
 
-    public MPU9150(I2CDevice device) {
-        try {
-            int devid = device.read(REG_DEVID); // 133
-            if (devid != 133) {
-                return;
-            }
-            sensor = device;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public MPU9150(I2CDevice device) throws IOException {
+        // Check device id
+//        int devid = device.read(REG_DEVID);
+//        if (devid != 133) {
+//            return;
+//        }
+
+        sensor = device;
     }
 
     /**
@@ -63,36 +62,47 @@ public class MPU9150 {
 
     /**
      * Set Full Scale Range for accelerometer output overriding
-     * Register 1C bit4-3
+     * Register 1C bit4-3. This temporarily activates on mode, because
+     * range can be set only in this mode!
      * @param range selected scale (e.g. {@link #RANGE_2_G RANGE_2_G})
      * @throws IOException
      */
     public void setRange(int range) throws IOException {
-        int format = (byte) (sensor.read(REG_ACCEL_CONFIG) | ((range & 0x03) << 3));
+        // Save current mode, by default it is 0 (POWER_MODE_ON)
+        int temp = mode;
+        // Switch to on mode
+        setPowerMode(POWER_MODE_ON);
+        // Set range
+        int format = (sensor.read(REG_ACCEL_CONFIG) & 0xE7) | ((range & 0x03) << 3);
         sensor.write(REG_ACCEL_CONFIG, (byte) format);
+        // Restore original mode
+        setPowerMode(temp);
     }
 
     /**
      * Change the device power management like low power mode (cycle), or
      * sleep. For low power mode you can set wake-up frequency.
      * See {@link #setWakeUpFrequency(int) setWakeUpFrequency}
-     * @param mode (e.g. {@link #POWER_MODE_SLEEP POWER_MODE_SLEEP})
+     * @param _mode (e.g. {@link #POWER_MODE_SLEEP POWER_MODE_SLEEP})
      * @throws IOException
      */
-    public void setPowerMode(int mode) throws IOException {
+    public void setPowerMode(int _mode) throws IOException {
         int format;
 
-        if (mode == POWER_MODE_ON) {
+        if (_mode == POWER_MODE_ON) {
             format = (byte) (sensor.read(REG_PWR_MGMT_1) & 0x9F);
             sensor.write(REG_PWR_MGMT_1, (byte) format);
+            mode = _mode;
         }
-        else if (mode == POWER_MODE_SLEEP) {
+        else if (_mode == POWER_MODE_SLEEP) {
             format = (byte) (sensor.read(REG_PWR_MGMT_1) & 0x9F) | 0x40;
             sensor.write(REG_PWR_MGMT_1, (byte) format);
+            mode = _mode;
         }
-        else if (mode == POWER_MODE_CYCLE) {
+        else if (_mode == POWER_MODE_CYCLE) {
             format = (byte) (sensor.read(REG_PWR_MGMT_1) & 0x9F) | 0x20;
             sensor.write(REG_PWR_MGMT_1, (byte) format);
+            mode = _mode;
         }
     }
 
@@ -136,5 +146,18 @@ public class MPU9150 {
      */
     public boolean isDataReady() throws IOException {
         return ((sensor.read(MPU9150.REG_INT_STATUS) & 0x01) != 0);
+    }
+
+    /**
+     * Reset Device.
+     * Warning! This will reset the memory to defaults
+     */
+    public void reset() throws IOException {
+        sensor.write(REG_PWR_MGMT_1, (byte) 0x80);
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }

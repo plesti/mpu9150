@@ -2,7 +2,9 @@ import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 
 /**
  * Created by Peter Lesti on 2015.03.31..
@@ -43,7 +45,43 @@ public class Main {
             startReading();
 
             // Wait until Enter button pressed
-            System.in.read();
+            //  open up standard input
+            BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+            boolean t = true;
+            while (t) {
+                String read= br.readLine();
+                if (read.equals("5hz")) {
+                    sensor.setWakeUpFrequency(MPU9150.WAKEUP_FREQUENCY_5HZ);
+                }
+                else if (read.equals("1.25hz")) {
+                    sensor.setWakeUpFrequency(MPU9150.WAKEUP_FREQUENCY_1_25HZ);
+                }
+                else if (read.equals("20hz")) {
+                    sensor.setWakeUpFrequency(MPU9150.WAKEUP_FREQUENCY_20HZ);
+                }
+                else if (read.equals("cycle")) {
+                    sensor.setPowerMode(MPU9150.POWER_MODE_CYCLE);
+                }
+                else if (read.equals("sleep")) {
+                    sensor.setPowerMode(MPU9150.POWER_MODE_SLEEP);
+                }
+                else if (read.equals("on")) {
+                    sensor.setPowerMode(MPU9150.POWER_MODE_ON);
+                }
+                else if (read.equals("2g")) {
+                    sensor.setRange(MPU9150.RANGE_2_G);
+                }
+                else if (read.equals("4g")) {
+                    sensor.setRange(MPU9150.RANGE_4_G);
+                }
+                else if (read.equals("r")) {
+                    sensor.reset();
+                }
+                else if (read.equals("e")) {
+                    break;
+                }
+            }
+
 
             // Stop reading thread
             stopReading();
