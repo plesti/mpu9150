@@ -13,6 +13,8 @@ public class MPU9150 {
     public static final int REG_FIFOENABLE = 0x23;
     public static final int REG_INT_STATUS = 0x3A;
     public static final int REG_ACCEL_XOUT_H = 0x3B;
+    public static final int REG_TEMP_OUT_H = 0x41;
+    public static final int REG_GYRO_XOUT_H = 0x43;
     public static final int REG_USERCONTROL = 0x6A;
     public static final int REG_PWR_MGMT_1 = 0x6B;
     public static final int REG_PWR_MGMT_2 = 0x6C;
@@ -35,7 +37,7 @@ public class MPU9150 {
 
     private I2CDevice sensor;
 
-    int mode = 0;
+    public int mode = 0;
 
     public MPU9150(I2CDevice device) throws IOException {
         // Check device id
@@ -122,7 +124,7 @@ public class MPU9150 {
      * @return number of bytes read
      * @throws IOException
      */
-    public int getAcceleration(int[] store) throws IOException {
+    public int readAcceleration(int[] store) throws IOException {
         if (store.length != 3) {
             throw new IndexOutOfBoundsException("Store array must be 3 double");
         }
@@ -139,6 +141,45 @@ public class MPU9150 {
         return read;
     }
 
+    /**
+     * Read gyroscope sensor data to the given array
+     * @param store sensor data to store in. Length should be 6.
+     * @return number of bytes read
+     * @throws IOException
+     */
+    public int readGyroscope(int[] store) throws IOException {
+        if (store.length != 3) {
+            throw new IndexOutOfBoundsException("Store array must be 3 double");
+        }
+        byte[] gyroData = new byte[6];
+        // Data must be read in one burst or multiple byte read
+        // because the vector will be erased from sensor memory on any
+        // (single or multiple) read. See documentation..
+        int read = sensor.read(REG_GYRO_XOUT_H, gyroData, 0, 6);
+
+        store[0] = (gyroData[0] << 8) | (gyroData[1] & 0xFF);
+        store[1] = (gyroData[2] << 8) | (gyroData[3] & 0xFF);
+        store[2] = (gyroData[4] << 8) | (gyroData[5] & 0xFF);
+
+        return read;
+    }
+
+    /**
+     * Read gyroscope sensor data to the given array
+     * @return temperature in celsius
+     * @throws IOException
+     */
+    public double readTemperature() throws IOException {
+        byte[] temp = new byte[2];
+        // Data must be read in one burst or multiple byte read
+        // because the vector will be erased from sensor memory on any
+        // (single or multiple) read. See documentation..
+        sensor.read(REG_TEMP_OUT_H, temp, 0, 2);
+
+        double celsius = ( ((temp[0] << 8) | (temp[1] & 0xFF)) / 340.0) + 35;
+//        return ((temp[0] << 8) | (temp[1] & 0xFF));
+        return celsius;
+    }
 
     /**
      * Check if data is ready to read.
