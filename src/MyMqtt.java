@@ -6,7 +6,7 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
  */
 public class MyMqtt {
     public static final int QOS             = 2;
-    public static final String MQTT_BROKER  = "tcp://jango.no-ip.org:1883";
+    public static final String MQTT_BROKER  = "tcp://url:1883";
     public static final String CLIENT_ID    = "Raspby";
     public static final String DATA_TOPIC   = "mpu9150/data";
     public static final String CONFIG_TOPIC = "mpu9150/config";
